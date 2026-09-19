@@ -32,7 +32,10 @@ NAME="${ARTIFACT_NAME:-黑洞宠物}-${VERSION}-mac-universal"
 APP="dist/mac-universal/黑洞宠物.app"
 
 echo "==> 1/5 打包 universal .app（此时未签名）"
-"$NODE" ./node_modules/.bin/electron-builder --mac --dir
+# --universal 必须显式传：光靠 package.json 里 mac.target[].arch=["universal"]
+# 是不够的 —— --dir 会把 target 覆盖成 dir，架构就退回成**宿主架构**，
+# 结果是 CI（macos-14/arm64）只产出 dist/mac-arm64，下一步找不到 mac-universal。
+"$NODE" ./node_modules/.bin/electron-builder --mac --dir --universal
 
 echo "==> 2/5 ad-hoc 签名"
 [ -d "$APP" ] || { echo "找不到 $APP"; exit 1; }
