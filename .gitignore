@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.test-tmp/
+.npm-cache/
+.electron-cache/
+.builder-cache/
+.fakehome/
+.userdata/
+.ud/
+.udd/
+Singleton*
+*.log
+.DS_Store
+preview-debug*.png
+preview-coords*.png
+preview-burst*.png
+build/icon.iconset/

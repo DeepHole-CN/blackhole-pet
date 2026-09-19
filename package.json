@@ -1,0 +1,96 @@
+{
+  "name": "blackhole-pet",
+  "version": "1.0.0",
+  "private": true,
+  "description": "黑洞桌面宠物 — 引力透镜 + 吸积盘 + 吞噬效果",
+  "main": "main.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "electron .",
+    "start:compat": "./start.sh --no-sandbox",
+    "preview": "electron scripts/preview.js",
+    "preview:compat": "./start.sh --entry scripts/preview.js --no-sandbox",
+    "smoke": "./start.sh --entry scripts/smoke.js --no-sandbox",
+    "test": "node scripts/test-devour.js && node scripts/test-settings.js",
+    "dist:mac": "./scripts/build-mac.sh",
+    "icon": "./start.sh --entry scripts/make-icon.js --no-sandbox"
+  },
+  "devDependencies": {
+    "electron": "^44.4.3",
+    "electron-builder": "^26.15.3"
+  },
+  "author": "renxiaodong",
+  "license": "MIT",
+  "build": {
+    "appId": "com.renxiaodong.blackholepet",
+    "productName": "黑洞宠物",
+    "copyright": "",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "lib/**/*",
+      "renderer/**/*",
+      "package.json",
+      "!**/*.map",
+      "!**/.DS_Store"
+    ],
+    "asar": true,
+    "compression": "maximum",
+    "mac": {
+      "category": "public.app-category.entertainment",
+      "icon": "build/icon.icns",
+      "darkModeSupport": true,
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "extendInfo": {
+        "CFBundleDisplayName": "黑洞宠物",
+        "CFBundleName": "黑洞宠物",
+        "NSHighResolutionCapable": true,
+        "LSApplicationCategoryType": "public.app-category.entertainment",
+        "LSMinimumSystemVersion": "11.0"
+      }
+    },
+    "dmg": {
+      "title": "黑洞宠物",
+      "icon": "build/icon.icns",
+      "contents": [
+        {
+          "x": 150,
+          "y": 190,
+          "type": "file"
+        },
+        {
+          "x": 400,
+          "y": 190,
+          "type": "link",
+          "path": "/Applications"
+        },
+        {
+          "x": 275,
+          "y": 400,
+          "type": "file",
+          "path": "build/安装说明.txt"
+        }
+      ]
+    }
+  }
+}

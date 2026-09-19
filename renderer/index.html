@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>黑洞宠物</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="gl"></canvas>
+  <canvas id="fx"></canvas>
+
+  <!-- 状态面板 -->
+  <div id="hud" class="panel hidden">
+    <div class="hud-title"><span class="dot"></span>黑洞 <b id="hudId">BH-1</b></div>
+    <div class="hud-row"><span>质量</span><b id="hudMass">1.0×10³ M☉</b></div>
+    <div class="hud-row"><span>吞噬</span><b id="hudEaten">0 件</b></div>
+    <div class="hud-row"><span>吸积</span><b id="hudBytes">0 B</b></div>
+    <div id="hudPerm" class="hud-perm hidden">开启引力透镜需要「屏幕录制」权限 <u>去设置</u></div>
+  </div>
+
+  <!-- 右键菜单 -->
+  <div id="menu" class="panel hidden"></div>
+
+  <!-- 喂食模式提示 -->
+  <div id="feedHint" class="pill hidden">喂食模式：把文件拖进来 · ⌥⌘B 退出</div>
+
+  <!-- 提示气泡 -->
+  <div id="toast" class="pill hidden"></div>
+
+  <script src="shaders.js"></script>
+  <script src="gl.js"></script>
+  <script src="overlay.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
