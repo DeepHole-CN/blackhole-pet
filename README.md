@@ -540,3 +540,9 @@ electron . --no-sandbox        # ❌ 被当成 app 自己的参数，沙箱照�
 
 想让它彻底安静：`driftSpeed` 设 `0` + 「允许鼠标拖动」关掉 ——
 就是一个纯观赏的、完全不碰鼠标的黑洞。
+
+---
+
+## 许可
+
+[MIT](LICENSE) © 2026 renxiaodong
