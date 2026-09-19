@@ -1,0 +1,143 @@
+name: 构建 macOS 安装包
+
+# 打 tag（如 v1.0.1）时自动构建并发布到 Release；
+# 也可以手动触发：只构建，填了 tag 才发布。
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '要发布到的 tag（例如 v1.0.1，必须已存在）。留空 = 只构建，不上传 Release。'
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+
+# 同一个 ref 重复触发时，取消上一次还没跑完的构建
+concurrency:
+  group: build-mac-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-mac:
+    name: 构建 universal 安装包
+    runs-on: macos-14
+    timeout-minutes: 90
+
+    env:
+      # 产物名前缀必须是 ASCII —— GitHub 会剥离 Release 资源名里的中文字符，
+      # 中文名会被削成 "-1.0.0-mac-universal.dmg" 这种开头带横杠的废名。
+      ARTIFACT_NAME: BlackHolePet
+      # CI 在美国，直连 GitHub Releases 比走 npmmirror 快且稳。
+      # （项目根目录的 .npmrc 把默认镜像指到了 npmmirror，这里覆盖它）
+      ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
+      npm_config_electron_mirror: https://github.com/electron/electron/releases/download/
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 需要本地有 tag，供手动发布时校验
+
+      - name: 准备 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 缓存 Electron 二进制
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+          key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 跑回归测试
+        run: npm test
+
+      - name: 构建安装包
+        run: |
+          echo "Node : $(node --version)"
+          echo "架构 : $(uname -m)"
+          echo "产物 : $ARTIFACT_NAME-\$(node -p "require('./package.json').version")-mac-universal.*"
+          # 让脚本用 PATH 里的 node，而不是它硬编码的 /opt/homebrew/bin/node
+          NODE="$(command -v node)" npm run dist:mac
+
+      - name: 校验产物
+        run: |
+          set -e
+          ls -lh dist/*.dmg dist/*.zip
+
+          for f in dist/*.dmg dist/*.zip; do
+            [ -s "$f" ] || { echo "::error::$f 不存在或为空"; exit 1; }
+          done
+
+          echo "==> dmg 完整性校验"
+          hdiutil verify dist/*.dmg
+
+          echo "==> app 签名校验"
+          APP="$(find dist/mac-universal -maxdepth 1 -name '*.app' -print -quit)"
+          [ -n "$APP" ] || { echo "::error::找不到 .app"; exit 1; }
+          codesign --verify --deep --strict "$APP"
+          codesign -dv "$APP" 2>&1 | grep -E 'Identifier|Signature'
+          echo "  ✅ 签名有效：$APP"
+
+      - name: 生成校验和
+        run: |
+          cd dist
+          shasum -a 256 ./*.dmg ./*.zip > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: 上传为构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: BlackHolePet-mac-universal
+          path: |
+            dist/*.dmg
+            dist/*.zip
+            dist/SHA256SUMS.txt
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: 发布到 GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -e
+
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            TAG="$GITHUB_REF_NAME"
+          else
+            TAG="${INPUT_TAG:-}"
+          fi
+
+          if [ -z "$TAG" ]; then
+            echo "没有指定 tag —— 产物只作为 workflow artifact 保留，不发布 Release。"
+            exit 0
+          fi
+
+          # 手动触发时要确认 tag 真的存在，避免 gh 拿分支 HEAD 造一个假 tag
+          if ! git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "::error::tag $TAG 不存在。请先执行：git tag $TAG && git push origin $TAG"
+            exit 1
+          fi
+
+          echo "==> 发布 $TAG"
+          gh release view "$TAG" >/dev/null 2>&1 \
+            || gh release create "$TAG" --title "🕳️ 黑洞宠物 $TAG" --generate-notes
+
+          gh release upload "$TAG" \
+            dist/*.dmg dist/*.zip dist/SHA256SUMS.txt --clobber
+
+          echo "==> 完成：$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$TAG"

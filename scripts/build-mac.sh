@@ -5,6 +5,12 @@
 #   # → dist/黑洞宠物-<版本>-mac-universal.dmg    双击挂载，拖进 Applications
 #   # → dist/黑洞宠物-<版本>-mac-universal.zip    解压后拖进 Applications
 #
+# 产物名前缀可以用 ARTIFACT_NAME 覆盖（CI 里必须用 ASCII 名 —— GitHub 会
+# 剥离 Release 资源名里的中文字符）：
+#
+#   ARTIFACT_NAME=BlackHolePet ./scripts/build-mac.sh
+#   # → dist/BlackHolePet-<版本>-mac-universal.dmg
+#
 # 为什么要绕过 electron-builder 自带的 dmg/zip target：
 #   electron-builder 是在**签名之前**就打包 dmg/zip 的，而它默认不做签名
 #   （没有 Apple 开发者证书）。结果是安装包里的 app 只有链接器级别的
@@ -22,7 +28,7 @@ export ELECTRON_MIRROR="${ELECTRON_MIRROR:-https://cdn.npmmirror.com/binaries/el
 export CSC_IDENTITY_AUTO_DISCOVERY=false
 
 VERSION=$("$NODE" -p "require('./package.json').version")
-NAME="黑洞宠物-${VERSION}-mac-universal"
+NAME="${ARTIFACT_NAME:-黑洞宠物}-${VERSION}-mac-universal"
 APP="dist/mac-universal/黑洞宠物.app"
 
 echo "==> 1/5 打包 universal .app（此时未签名）"
