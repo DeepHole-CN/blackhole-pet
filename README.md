@@ -350,6 +350,28 @@ npm run dist:mac
 **universal** = 同时含 `arm64` 和 `x86_64`，Intel 和 Apple 芯片的 Mac 都能跑。
 体积大是因为 Electron Framework 被塞了两份，属正常。
 
+### 自动打包（GitHub Actions）
+
+也可以交给 CI 打（`.github/workflows/build-mac.yml`）：
+
+- **打 tag 自动发布** —— `git tag v1.0.1 && git push origin v1.0.1`
+- **手动触发** —— Actions →「构建 macOS 安装包」→ Run workflow
+  （`tag` 留空 = 只构建不发布，产物在 run 页面的 Artifacts 里，保留 14 天）
+
+流程：`npm ci` → `npm test` → `npm run dist:mac` → 校验 dmg 完整性 + ad-hoc 签名
+→ 生成 `SHA256SUMS.txt` → 上传 Release。
+
+> **两个 CI 特有的坑，workflow 里已经处理掉：**
+>
+> 1. **产物名必须是 ASCII。** GitHub 会剥离 Release 资源名里的中文字符，
+>    `黑洞宠物-1.0.0-mac-universal.dmg` 会被削成 `-1.0.0-mac-universal.dmg`
+>    （开头一个横杠，终端里没法直接用）。所以 CI 里设
+>    `ARTIFACT_NAME=BlackHolePet`，产出 `BlackHolePet-<版本>-mac-universal.*`。
+>    本地不设这个变量，产物名保持中文不变。
+> 2. **Electron 镜像。** 项目里的 `.npmrc` 把镜像指向 npmmirror（本机直连
+>    GitHub 慢）。CI 跑在美国，workflow 用 `ELECTRON_MIRROR` 环境变量覆盖回
+>    GitHub 官方源，否则下载会很慢甚至超时。
+
 ### 关于签名，有个坑
 
 `electron-builder` 自带的 `dmg`/`zip` target 是**在签名之前**打包的，而它默认不签名

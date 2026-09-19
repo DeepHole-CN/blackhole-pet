@@ -69,7 +69,8 @@ jobs:
         run: |
           echo "Node : $(node --version)"
           echo "架构 : $(uname -m)"
-          echo "产物 : $ARTIFACT_NAME-\$(node -p "require('./package.json').version")-mac-universal.*"
+          VERSION=$(node -p "require('./package.json').version")
+          echo "产物 : ${ARTIFACT_NAME}-${VERSION}-mac-universal.*"
           # 让脚本用 PATH 里的 node，而不是它硬编码的 /opt/homebrew/bin/node
           NODE="$(command -v node)" npm run dist:mac
 
